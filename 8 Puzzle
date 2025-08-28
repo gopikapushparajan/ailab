@@ -1,0 +1,61 @@
+from collections import deque
+import copy
+
+# Define initial and goal states
+initial_state = [[1, 2, 3], [4, 5, 6], [7, 0, 8]]
+goal_state = [[1, 2, 3], [4, 5, 6], [7, 8, 0]]
+
+# Helper to find the position of 0 (blank)
+def find_zero(state):
+    for i in range(3):
+        for j in range(3):
+            if state[i][j] == 0:
+                return i, j
+
+# Check if two states are equal
+def is_goal(state):
+    return state == goal_state
+
+# Move generator
+def get_neighbors(state):
+    i, j = find_zero(state)
+    neighbors = []
+    directions = [(-1,0), (1,0), (0,-1), (0,1)]  # up, down, left, right
+
+    for di, dj in directions:
+        new_i, new_j = i + di, j + dj
+        if 0 <= new_i < 3 and 0 <= new_j < 3:
+            new_state = copy.deepcopy(state)
+            new_state[i][j], new_state[new_i][new_j] = new_state[new_i][new_j], new_state[i][j]
+            neighbors.append(new_state)
+    return neighbors
+
+# BFS to find shortest path
+def bfs(initial):
+    queue = deque([(initial, [])])
+    visited = set()
+
+    while queue:
+        current, path = queue.popleft()
+        state_tuple = tuple(tuple(row) for row in current)
+        if state_tuple in visited:
+            continue
+        visited.add(state_tuple)
+
+        if is_goal(current):
+            return path + [current]
+
+        for neighbor in get_neighbors(current):
+            queue.append((neighbor, path + [current]))
+
+    return None
+
+# Run the solver
+solution = bfs(initial_state)
+
+# Display solution
+print("Steps to solve:")
+for step in solution:
+    for row in step:
+        print(row)
+    print("-----")
