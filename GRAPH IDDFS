@@ -1,0 +1,66 @@
+import itertools
+
+class NodeState:
+    def __init__(self, node, parent=None, depth=0):
+        self.node = node
+        self.parent = parent
+        self.depth = depth
+
+def iddfs(graph, start, goal):
+    for depth_limit in itertools.count():
+        print(f"\nTrying depth limit: {depth_limit}")
+        visited = set()
+        search_path = []
+        result = dls(NodeState(start), goal, depth_limit, graph, visited, search_path)
+        print("Visited in this iteration:", search_path)
+        if result:
+            return result
+    return None
+
+def dls(current_state, goal, depth_limit, graph, visited, search_path):
+    search_path.append(current_state.node)
+
+    if current_state.node == goal:
+        return current_state
+
+    if current_state.depth == depth_limit:
+        return None
+
+    visited.add(current_state.node)
+
+    for neighbor in graph.get(current_state.node, []):
+        if neighbor not in visited:
+            neighbor_state = NodeState(neighbor, current_state, current_state.depth + 1)
+            result = dls(neighbor_state, goal, depth_limit, graph, visited, search_path)
+            if result:
+                return result
+    return None
+
+# Example Usage:
+graph = {
+    'A': ['B', 'C'],
+    'B': ['D', 'E'],
+    'C': ['F','G'],
+    'D': ['H'],
+    'E': ['I'],
+}
+
+start_node = 'A'
+goal_node = 'G'
+
+solution_node = iddfs(graph, start_node, goal_node)
+
+if solution_node:
+    path = []
+    current = solution_node
+    while current:
+        path.append(current.node)
+        current = current.parent
+    path.reverse()
+
+    print("\nPath to goal:")
+    for node in path:
+        print(node)
+    print(f"Solution found in {solution_node.depth} steps.")
+else:
+    print("No solution found.")
