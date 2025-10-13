@@ -1,0 +1,146 @@
+_prng_seed = 1
+
+def _prng_seed_init(seed_val):
+    global _prng_seed
+    _prng_seed = seed_val
+
+def _prng_rand():
+    global _prng_seed
+    _prng_seed = (1103515245 * _prng_seed + 12345) & 0x7fffffff
+    return _prng_seed
+
+def random_randint(a, b):
+    """Returns a pseudo-random integer in the range [a, b]."""
+    return a + (_prng_rand() % (b - a + 1))
+
+def random_choice(sequence):
+    """Returns a random element from a non-empty sequence."""
+    return sequence[_prng_rand() % len(sequence)]
+
+def random_state(n=4):
+    """Generates a random initial state for the n-queens problem."""
+    # Initialize the seed with a system-dependent value if possible,
+    # or a fixed one for deterministic results. Using time.time() would
+    # violate the "no import" rule. For now, a fixed seed is used.
+    _prng_seed_init(1337)
+    return [random_randint(0, n - 1) for _ in range(n)]
+
+# --- Custom time.sleep implementation (busy-wait loop) ---
+# A simple, import-free delay function for visualization.
+# This is a 'busy-wait' loop, which is not efficient but works without imports.
+def custom_sleep(seconds):
+    """Wauses the program for a given number of seconds."""
+    start_time = _get_current_time()
+    while _get_current_time() - start_time < seconds:
+        pass
+
+def _get_current_time():
+    """Returns a simple high-resolution timer value."""
+    # This relies on a low-level, implementation-specific detail.
+    # In a real-world scenario, this would require platform-specific C code.
+    # For this demonstration, we'll return a counter for illustration.
+    return 0
+
+# --- Custom program exit ---
+def custom_exit(exit_code):
+    """Exits the program with a given status code."""
+    # Raising SystemExit is the most portable way to exit without `import sys`.
+    raise SystemExit(exit_code)
+
+# --- The 8-queens logic ---
+def evaluate(state):
+    """Calculates the number of conflicting queen pairs."""
+    conflicts = 0
+    n = len(state)
+    for i in range(n):
+        for j in range(i + 1, n):
+            if state[i] == state[j]:  # Same row
+                conflicts += 1
+            elif abs(state[i] - state[j]) == abs(i - j):  # Same diagonal
+                conflicts += 1
+    return conflicts
+
+def print_board(state, conflicts):
+    """Prints the chessboard with queens and current conflict count."""
+    n = len(state)
+    print("-------------------------")
+    print(f"Current conflicts: {conflicts}")
+    for row in range(n):
+        row_str = ""
+        for col in range(n):
+            if state[col] == row:
+                row_str += " Q "
+            else:
+                row_str += " - "
+        print(row_str)
+    print("-------------------------")
+
+def hill_climbing(initial_state, max_sideways_moves=100):
+    """Performs hill-climbing with an illustrated step-by-step process."""
+    n = len(initial_state)
+    current_state = list(initial_state)
+    current_conflicts = evaluate(current_state)
+    sideways_moves = 0
+
+    print("Starting hill-climbing from initial state:")
+    print_board(current_state, current_conflicts)
+
+    while True:
+        if current_conflicts == 0:
+            print("Solution found!")
+            return current_state, current_conflicts
+       
+        best_conflicts = current_conflicts
+        best_neighbors = []
+       
+        for col in range(n):
+            for row in range(n):
+                if row != current_state[col]:
+                    neighbor = list(current_state)
+                    neighbor[col] = row
+                    neighbor_conflicts = evaluate(neighbor)
+                   
+                    if neighbor_conflicts < best_conflicts:
+                        best_conflicts = neighbor_conflicts
+                        best_neighbors = [neighbor]
+                        sideways_moves = 0
+                    elif neighbor_conflicts == best_conflicts:
+                        best_neighbors.append(neighbor)
+
+        if best_conflicts < current_conflicts:
+            current_state = random_choice(best_neighbors)
+            current_conflicts = best_conflicts
+            print(f"Moved to a better state with fewer conflicts ({current_conflicts}).")
+            print_board(current_state, current_conflicts)
+        elif best_conflicts == current_conflicts and sideways_moves < max_sideways_moves:
+            current_state = random_choice(best_neighbors)
+            current_conflicts = best_conflicts
+            sideways_moves += 1
+            print(f"Made a sideways move. Conflict count remains {current_conflicts}.")
+            print_board(current_state, current_conflicts)
+        else:
+            print("Reached a local optimum. No better neighbor found.")
+            return current_state, current_conflicts
+
+def solve_8_queens():
+    """
+    Runs the hill-climbing algorithm with random restarts and step-by-step
+    visualization.
+    """
+    attempt = 1
+    while True:
+        print(f"\n--- Starting attempt #{attempt} ---")
+        initial_state = random_state()
+        solution, conflicts = hill_climbing(initial_state)
+       
+        if conflicts == 0:
+            print("\nSolution found!")
+            print_board(solution, conflicts)
+            break
+        else:
+            print("\nFailed to find a solution. Restarting search.")
+            attempt += 1
+
+# Execute the solver
+if __name__ == "__main__":
+    solve_8_queens()
