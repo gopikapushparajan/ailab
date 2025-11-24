@@ -1,0 +1,145 @@
+import math
+import random
+
+def print_board(board):
+    for r in range(3):
+        print(" " + " | ".join(board[r]))
+        if r < 2:
+            print("---+---+---")
+    print()
+
+def empty_cells(board):
+    return [(r, c) for r in range(3) for c in range(3) if board[r][c] == " "]
+
+def is_full(board):
+    return all(board[r][c] != " " for r in range(3) for c in range(3))
+
+def winner(board):
+    # Rows/columns
+    for i in range(3):
+        if board[i][0] != " " and board[i][0] == board[i][1] == board[i][2]:
+            return board[i][0]
+        if board[0][i] != " " and board[0][i] == board[1][i] == board[2][i]:
+            return board[0][i]
+    # Diagonals
+    if board[0][0] != " " and board[0][0] == board[1][1] == board[2][2]:
+        return board[0][0]
+    if board[0][2] != " " and board[0][2] == board[1][1] == board[2][0]:
+        return board[0][2]
+    return None
+
+def terminal_score(board, ai_player, human_player):
+    w = winner(board)
+    if w == ai_player:
+        return 1
+    elif w == human_player:
+        return -1
+    elif is_full(board):
+        return 0
+    return None  # non-terminal
+
+def minimax(board, depth, is_maximizing, ai_player, human_player, alpha=-math.inf, beta=math.inf):
+    # Check for terminal state
+    ts = terminal_score(board, ai_player, human_player)
+    if ts is not None:
+        return ts
+
+    if is_maximizing:
+        best = -math.inf
+        for (r, c) in empty_cells(board):
+            board[r][c] = ai_player
+            score = minimax(board, depth + 1, False, ai_player, human_player, alpha, beta)
+            board[r][c] = " "
+            best = max(best, score)
+            alpha = max(alpha, best)
+            if beta <= alpha:
+                break  # beta cut-off
+        return best
+    else:
+        best = math.inf
+        for (r, c) in empty_cells(board):
+            board[r][c] = human_player
+            score = minimax(board, depth + 1, True, ai_player, human_player, alpha, beta)
+            board[r][c] = " "
+            best = min(best, score)
+            beta = min(beta, best)
+            if beta <= alpha:
+                break  # alpha cut-off
+        return best
+
+def ai_move(board, ai_player, human_player):
+    best_score = -math.inf
+    best_moves = []
+    for (r, c) in empty_cells(board):
+        board[r][c] = ai_player
+        score = minimax(board, 0, False, ai_player, human_player)
+        board[r][c] = " "
+        if score > best_score:
+            best_score = score
+            best_moves = [(r, c)]
+        elif score == best_score:
+            best_moves.append((r, c))
+    # tie-breaker: choose random among best moves
+    return random.choice(best_moves) if best_moves else None
+
+def get_player_choice():
+    choice = ""
+    while choice not in ("X", "O"):
+        choice = input("Choose your symbol (X goes first) — X or O: ").strip().upper()
+    return choice
+
+def human_turn(board, human_player):
+    while True:
+        try:
+            pos = input("Enter row and column (e.g. 0 2): ").strip().split()
+            if len(pos) != 2:
+                raise ValueError
+            r, c = int(pos[0]), int(pos[1])
+            if not (0 <= r <= 2 and 0 <= c <= 2):
+                raise ValueError
+            if board[r][c] != " ":
+                print("That cell is already taken. Try again.")
+                continue
+            board[r][c] = human_player
+            break
+        except ValueError:
+            print("Invalid input. Enter two numbers between 0 and 2 separated by space (e.g. '1 1').")
+
+def play_game():
+    board = [[" " for _ in range(3)] for _ in range(3)]
+    human_player = get_player_choice()
+    ai_player = "O" if human_player == "X" else "X"
+    current = "X"  # X always starts
+
+    print(f"\nYou are '{human_player}'. AI is '{ai_player}'. Let's play!\n")
+    while True:
+        print_board(board)
+        if current == human_player:
+            print("Your move.")
+            human_turn(board, human_player)
+        else:
+            print("AI is thinking...")
+            move = ai_move(board, ai_player, human_player)
+            if move:
+                board[move[0]][move[1]] = ai_player
+            else:
+                # No valid moves (shouldn't happen if logic is correct)
+                pass
+
+        w = winner(board)
+        if w:
+            print_board(board)
+            if w == human_player:
+                print("Congratulations — you win!")
+            else:
+                print("AI wins. Better luck next time!")
+            break
+        if is_full(board):
+            print_board(board)
+            print("It's a draw!")
+            break
+
+        current = ai_player if current == human_player else human_player
+
+if __name__ == "__main__":
+    play_game()
