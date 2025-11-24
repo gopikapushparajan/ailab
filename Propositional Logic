@@ -1,0 +1,95 @@
+import itertools
+import re
+
+def extract_variables(expr):
+    """Extract unique propositional variables (letters) from an expression."""
+    return sorted(set(ch for ch in expr if ch.isalpha()))
+
+def replace_implications(expr):
+    """
+    Replace all occurrences of A → B with (not A) or B.
+    Handles only one implication per expression for simplicity.
+    """
+    # If no implication, return as is
+    if '→' not in expr:
+        return expr
+
+    # Recursively replace implications if multiple exist
+    while '→' in expr:
+        # find first implication
+        parts = expr.split('→', 1)
+        left = parts[0].rstrip()
+        right = parts[1].lstrip()
+
+        # To correctly handle parentheses, find the left and right parts carefully:
+        # Here, for simplicity, we assume no nested parentheses for left and right parts.
+        # A full parser would be better for complex cases.
+
+        # Replace first implication with (not (left)) or (right)
+        new_expr = f"((not ({left})) or ({right}))"
+        expr = new_expr
+
+    return expr
+
+def evaluate(expr, valuation):
+    """Evaluate a propositional logic expression under a given valuation."""
+    # Replace variables with their boolean values (whole words only)
+    for var, val in valuation.items():
+        expr = re.sub(r'\b{}\b'.format(var), str(val), expr)
+   
+    # Replace logical operators with Python operators
+    expr = expr.replace("¬", " not ")
+    expr = expr.replace("∧", " and ")
+    expr = expr.replace("∨", " or ")
+    expr = expr.replace("↔", " == ")
+   
+    # Replace implications properly
+    expr = replace_implications(expr)
+
+    try:
+        return eval(expr)
+    except Exception as e:
+        raise ValueError(f"Error evaluating '{expr}': {e}")
+
+def entails(premises, conclusion):
+    """Return True if premises entail conclusion, else False."""
+    all_vars = set()
+    for f in premises + [conclusion]:
+        all_vars |= set(extract_variables(f))
+    all_vars = sorted(all_vars)
+
+    # Prepare to print truth table
+    header = all_vars + premises + [conclusion]
+    print("\t".join(header))
+
+    entails_result = True
+
+    for values in itertools.product([False, True], repeat=len(all_vars)):
+        valuation = dict(zip(all_vars, values))
+        row_vals = [str(valuation[var]) for var in all_vars]
+
+        premises_vals = []
+        for f in premises:
+            val = evaluate(f, valuation)
+            premises_vals.append(str(val))
+        conclusion_val = evaluate(conclusion, valuation)
+
+        row_vals.extend(premises_vals)
+        row_vals.append(str(conclusion_val))
+
+        print("\t".join(row_vals))
+
+        # Check entailment condition
+        if all(val == 'True' for val in premises_vals) and conclusion_val is False:
+            entails_result = False
+
+    return entails_result
+
+# Example usage
+premises = ["P→¬Q", "Q→P", "Q∨R"]
+conclusion = "R"
+
+if entails(premises, conclusion):
+    print("\nYes, the premises entail the conclusion.")
+else:
+    print("\nNo, the premises do NOT entail the conclusion.")
