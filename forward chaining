@@ -1,0 +1,54 @@
+# Simple Forward Reasoning (Forward Chaining) in FOL
+
+# Knowledge Base (Facts + Rules)
+# Rules are written in the form: (premises, conclusion)
+# Facts are just single statements
+
+def forward_chaining(kb, query):
+    facts = set()
+    rules = []
+
+    # Separate facts and rules
+    for statement in kb:
+        statement = statement.strip()
+        if "=>" in statement:
+            premises, conclusion = statement.split("=>")
+            premises = set(p.strip() for p in premises.split("&"))
+            rules.append((premises, conclusion.strip()))
+        else:
+            facts.add(statement)
+
+    print("Initial Facts:", facts)
+    print("Rules:", rules)
+    print("Query:", query)
+
+    inferred = True
+    while inferred:
+        inferred = False
+        for premises, conclusion in rules:
+            # Check if all premises are in facts
+            if premises.issubset(facts) and conclusion not in facts:
+                facts.add(conclusion)
+                print(f"Inferred: {conclusion}")
+                inferred = True
+                if conclusion == query:
+                    print("Query proven!")
+                    return True
+
+    print("Query cannot be proven.")
+    return False
+
+
+# Example Knowledge Base
+kb = [
+    "A",               # Fact
+    "A & B => C",      # Rule 1
+    "C => D",          # Rule 2
+    "D & E => F",      # Rule 3
+    "B"                # Fact
+]
+
+query = "D"
+
+# Run forward chaining
+forward_chaining(kb, query)
