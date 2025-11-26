@@ -1,0 +1,57 @@
+# Resolution:
+
+# (In a notebook you would run this once)
+# !pip install sympy
+
+from sympy import symbols, Or, Not, And
+from sympy.logic.inference import satisfiable
+
+# Define propositional atoms (grounded)
+food_Apple, food_Veg, food_Peanuts = symbols('food_Apple food_Veg food_Peanuts')
+likes_John_Apple, likes_John_Veg, likes_John_Peanuts = symbols(
+    'likes_John_Apple likes_John_Veg likes_John_Peanuts'
+)
+eats_Anil_Peanuts, killed_Anil, alive_Anil = symbols(
+    'eats_Anil_Peanuts killed_Anil alive_Anil'
+)
+
+# --- Knowledge Base (grounded CNF clauses) ---
+KB = [
+    # a. ¬food(Peanuts) ∨ likes(John, Peanuts)
+    Or(Not(food_Peanuts), likes_John_Peanuts),
+
+    # b. food(Apple)
+    food_Apple,
+
+    # c. food(vegetables)
+    food_Veg,
+
+    # d. ¬eats(Anil, Peanuts) ∨ killed(Anil) ∨ food(Peanuts)
+    Or(Not(eats_Anil_Peanuts), killed_Anil, food_Peanuts),
+
+    # e. eats(Anil, Peanuts)
+    eats_Anil_Peanuts,
+
+    # f. alive(Anil)
+    alive_Anil,
+
+    # h. killed(Anil) ∨ ¬alive(Anil)
+    Or(killed_Anil, Not(alive_Anil)),
+
+    # i. ¬alive(Anil) ∨ ¬killed(Anil)
+    Or(Not(alive_Anil), Not(killed_Anil)),
+]
+
+# --- Negated conclusion ---
+negated_conclusion = Not(likes_John_Peanuts)
+KB.append(negated_conclusion)
+
+# --- Check satisfiability ---
+result = satisfiable(And(*KB))
+
+if result is False:
+    print("Conclusion PROVED by resolution: likes(John, Peanuts)")
+else:
+    print("Conclusion NOT proved.")
+    print("Satisfying model (means no contradiction):")
+    print(result)
